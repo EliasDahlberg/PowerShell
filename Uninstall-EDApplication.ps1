@@ -7,6 +7,8 @@
    Uninstall-EDApplication -Name "Java"
 .EXAMPLE
    Uninstall-EDApplication -Name "Java","vlc","firefox"
+   .EXAMPLE
+   "Java","vlc","firefox" | Uninstall-EDApplication
 .INPUTS
    System.String
 .OUTPUTS
