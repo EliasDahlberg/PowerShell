@@ -7,8 +7,6 @@
    Uninstall-EDApplication -Name "Java"
 .EXAMPLE
    Uninstall-EDApplication -Name "Java","vlc","firefox"
-   .EXAMPLE
-   "Java","vlc","firefox" | Uninstall-EDApplication
 .INPUTS
    System.String
 .OUTPUTS
@@ -30,7 +28,9 @@ Function Uninstall-EDApplication {
         [Alias("Name","Displayname")]
         [string[]]$Application
     )
-    Process {
+    BEGIN {
+    }
+    PROCESS {
         Foreach ($App in $Application){
             Write-Verbose "Gathering Uninsall strings for $App"
 
@@ -39,80 +39,85 @@ Function Uninstall-EDApplication {
                 Get-ItemProperty |
                 Where-Object {$_.DisplayName -match $App}
             
-            If ($InstalledApp.UninstallString -like "*.exe`"") {
-                #For the uninstall string to work we need to remove any " "
+            Foreach ($installedappVersion in $InstalledApp){
+                If ($installedappVersion.UninstallString -like "*.exe`"") {
+                    #For the uninstall string to work we need to remove any " "
                 
-                Write-Verbose "Trying to uninstall .EXE Application `"$($InstalledApp.DisplayName)`""
+                    Write-Verbose "Trying to uninstall .EXE Application `"$($installedappVersion.DisplayName)`""
                 
-                $UninstallString = $InstalledApp.UninstallString
-                $UninstallString = $UninstallString -replace "`"", ""
-                & cmd.exe /C $UninstallString /S
-                Write-Verbose ("Uninstalled " + $InstalledApp.DisplayName)
+                    $UninstallString = $installedappVersion.UninstallString
+                    $UninstallString = $UninstallString -replace "`"", ""
+                    Start-Process $UninstallString "/S" -Wait -NoNewWindow
                 
-                $ApplicationStatus= @{Application = $InstalledApp.displayname
-                      Publisher = $InstalledApp.Publisher                        
-                      InstallLocation = $InstalledApp.installLocation
-                      Version = $InstalledApp.Version
-                      ComputerName = $env:COMPUTERNAME
-                      UserName = $env:USERNAME
-                      UninstallString = $UninstallString
-                      UninstallStatus = "Successful"
-                      UninstallDate = Get-Date -Format yyyyMMdd}
-            }
-            
-            elseif ($InstalledApp.UninstallString -like "*MsiExec.exe /X*") {
-                Write-Verbose "Trying to uninstall .MSI Application `"$($InstalledApp.DisplayName)`""
+                    Write-Verbose ("Uninstalled " + $installedappVersion.DisplayName)
                 
-                $UninstallString = $InstalledApp.UninstallString
-                & cmd.exe /c "$UninstallString  /qn /norestart"
-                
-                Write-Verbose ("Uninstalled " + $InstalledApp.DisplayName)
-                
-                $ApplicationStatus= @{Application = $InstalledApp.displayname
-                      Publisher = $InstalledApp.Publisher                        
-                      InstallLocation = $InstalledApp.installLocation
-                      Version = $InstalledApp.Version
-                      ComputerName = $env:COMPUTERNAME
-                      UserName = $env:USERNAME
-                      UninstallString = $UninstallString
-                      UninstallStatus = "Successful"
-                      UninstallDate = Get-Date -Format yyyyMMdd}
-            }
-            
-            Else {
-                Write-Verbose "The Application Was Found but there was no uninstall String"
-
-                if ($InstalledApp) {
                     $ApplicationStatus= @{SearchTerm = $App
-                          Application = $InstalledApp.displayname
-                          Publisher = $InstalledApp.Publisher                        
-                          InstallLocation = $InstalledApp.installLocation
-                          Version = $InstalledApp.Version
+                          Application = $installedappVersion.displayname
+                          Publisher = $installedappVersion.Publisher                        
+                          InstallLocation = $installedappVersion.installLocation
+                          Version = $installedappVersion.Version
                           ComputerName = $env:COMPUTERNAME
                           UserName = $env:USERNAME
                           UninstallString = $UninstallString
-                          UninstallStatus = "Unsuccessful"
-                          UninstallDate = $null}
-
+                          UninstallStatus = "Successful"
+                          UninstallDate = Get-Date -Format yyyyMMdd}
                 }
+            
+                elseif ($installedappVersion.UninstallString -like "*MsiExec.exe /X*") {
+                    Write-Verbose "Trying to uninstall .MSI Application `"$($installedappVersion.DisplayName)`""
                 
-                if (!$InstalledApp) {
-                    Write-Verbose "The Application doesn't seem to exist"
-
+                    $UninstallString = $installedappVersion.UninstallString
+                    $MSIExec = $UninstallString -split " "
+                    Start-Process $MSIExec[0] "$($MSIExec[1]) /qn /norestart" -Wait -NoNewWindow
+                    Write-Verbose ("Uninstalled " + $installedappVersion.DisplayName)
+                
                     $ApplicationStatus= @{SearchTerm = $App
-                          Application = $InstalledApp.displayname
-                          Publisher = $null                       
-                          InstallLocation = $null
-                          Version = $null
+                          Application = $installedappVersion.displayname
+                          Publisher = $installedappVersion.Publisher                        
+                          InstallLocation = $installedappVersion.installLocation
+                          Version = $installedappVersion.Version
                           ComputerName = $env:COMPUTERNAME
                           UserName = $env:USERNAME
-                          UninstallString = $null
-                          UninstallStatus = "NotFound"
-                          UninstallDate = $null}
+                          UninstallString = $UninstallString
+                          UninstallStatus = "Successful"
+                          UninstallDate = Get-Date -Format yyyyMMdd}
                 }
+            
+                Else {
+                
+                    if ($installedappVersion) {
+                        Write-Verbose "The Application Was Found but there was no uninstall String"
+                        $ApplicationStatus= @{SearchTerm = $App
+                              Application = $installedappVersion.displayname
+                              Publisher = $installedappVersion.Publisher                        
+                              InstallLocation = $installedappVersion.installLocation
+                              Version = $installedappVersion.Version
+                              ComputerName = $env:COMPUTERNAME
+                              UserName = $env:USERNAME
+                              UninstallString = $UninstallString
+                              UninstallStatus = "Unsuccessful"
+                              UninstallDate = Get-Date -Format yyyyMMdd}
+                          
+                    }
+                
+                    if (!$installedappVersion) {
+                        Write-Verbose "The Application doesn't seem to exist"
+
+                        $ApplicationStatus= @{SearchTerm = $App
+                              Application = $installedappVersion.displayname
+                              Publisher = $null                       
+                              InstallLocation = $null
+                              Version = $null
+                              ComputerName = $env:COMPUTERNAME
+                              UserName = $env:USERNAME
+                              UninstallString = $null
+                              UninstallStatus = "NotFound"
+                              UninstallDate = Get-Date -Format yyyyMMdd}
+                    }
+                }
+            $Done = New-Object -TypeName psobject -Property $ApplicationStatus
+            Write-Output $Done
             }
-        $Done = New-Object -TypeName psobject -Property $ApplicationStatus
-        Write-Output $Done
         }
     }
 }
