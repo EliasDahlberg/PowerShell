@@ -24,11 +24,11 @@
 Function Uninstall-EDApplication {
     [CmdletBinding()]
         Param(
-        [Parameter(Mandatory=$true,
-        ValueFromPipeline=$true,
-        ValueFromPipelineByPropertyName=$true)]
-        [Alias("Name","Displayname")]
-        [string[]]$Application
+            [Parameter(Mandatory=$true,
+            ValueFromPipeline=$true,
+            ValueFromPipelineByPropertyName=$true)]
+            [Alias("Name","Displayname")]
+            [string[]]$Application
         )
         BEGIN {
             $Paths = @(
@@ -39,7 +39,7 @@ Function Uninstall-EDApplication {
             Foreach ($App in $Application){
                 Write-Verbose "Gathering Uninsall strings for $App"
 
-                $InstalledApp = Get-ChildItem -Path $Paths |        
+                $InstalledApp = Get-ChildItem -Path $Paths |
                     Get-ItemProperty |
                     Where-Object {$_.DisplayName -match $App}
                 
@@ -49,16 +49,16 @@ Function Uninstall-EDApplication {
                     
                         Write-Verbose "Trying to uninstall .EXE Application `"$($installedappVersion.DisplayName)`""
                     
-                        $UninstallString = $installedappVersion.UninstallString -replace("`"", "")
+                        $UninstallString = $installedappVersion.UninstallString -Replace("`"", "")
                         $ExitCode = Start-Process -FilePath $UninstallString -ArgumentList "/S" -Wait -NoNewWindow -PassThru
                     
                         Write-Verbose ("Uninstalled " + $installedappVersion.DisplayName)
                     
                         $ApplicationStatus = @{
                             SearchTerm = $App
-                            Application = $installedappVersion.displayname
+                            Application = $installedappVersion.DisplayName
                             Publisher = $installedappVersion.Publisher
-                            InstallLocation = $installedappVersion.installLocation
+                            InstallLocation = $installedappVersion.InstallLocation
                             Version = $installedappVersion.Version
                             ComputerName = $env:COMPUTERNAME
                             UserName = $env:USERNAME
@@ -77,9 +77,9 @@ Function Uninstall-EDApplication {
                     
                         $ApplicationStatus = @{
                             SearchTerm = $App
-                            Application = $installedappVersion.displayname
-                            Publisher = $installedappVersion.Publisher                        
-                            InstallLocation = $installedappVersion.installLocation
+                            Application = $installedappVersion.DisplayName
+                            Publisher = $installedappVersion.Publisher
+                            InstallLocation = $installedappVersion.InstallLocation
                             Version = $installedappVersion.Version
                             ComputerName = $env:COMPUTERNAME
                             UserName = $env:USERNAME
@@ -93,16 +93,15 @@ Function Uninstall-EDApplication {
                         
                         $ApplicationStatus = @{
                             SearchTerm = $App
-                            Application = $installedappVersion.displayname
-                            Publisher = $installedappVersion.Publisher                        
-                            InstallLocation = $installedappVersion.installLocation
+                            Application = $installedappVersion.DisplayName
+                            Publisher = $installedappVersion.Publisher
+                            InstallLocation = $installedappVersion.InstallLocation
                             Version = $installedappVersion.Version
                             ComputerName = $env:COMPUTERNAME
                             UserName = $env:USERNAME
                             UninstallString = $UninstallString
                             UninstallStatus = $ExitCode.ExitCode
                             UninstallDate = Get-Date -Format yyyyMMdd}
-
                     }
 
                 $OutputStatus = New-Object -TypeName psobject -Property $ApplicationStatus
@@ -114,8 +113,8 @@ Function Uninstall-EDApplication {
                 
                 $ApplicationStatus = @{
                     SearchTerm = $App
-                    Application = $installedappVersion.displayname
-                    Publisher = $null                       
+                    Application = $installedappVersion.DisplayName
+                    Publisher = $null
                     InstallLocation = $null
                     Version = $null
                     ComputerName = $env:COMPUTERNAME
@@ -124,12 +123,13 @@ Function Uninstall-EDApplication {
                     UninstallStatus = "NotFound"
                     UninstallDate = $null}
 
-                $OutputStatus = New-Object -TypeName psobject -Property $ApplicationStatus
+                $OutputStatus = New-Object -TypeName PSObject -Property $ApplicationStatus
                 Write-Output $OutputStatus
             }
         }
     }
     END {
+    #Put this here if I or anyone else finds a use for it.
     }
 }
 
