@@ -177,3 +177,84 @@ Function Uninstall-EDApplication {
 }
 
 #Uninstall-EDApplication -Name "Java"
+
+
+<#
+.Synopsis
+   Gets one or many Win32 and appx applications
+.DESCRIPTION
+   Uses the registry (both x86 and x64) and Appx to find the applications
+.EXAMPLE
+   Get-EDApplication -Name "Java"
+.EXAMPLE
+   Get-EDApplication -Name "Java","vlc","firefox"
+.EXAMPLE
+   "Java","vlc","firefox" | Get-EDApplication
+.INPUTS
+   System.String
+.OUTPUTS
+   System.Management.Automation.PSCustomObject
+.RELATED LINKS
+    https://github.com/EliasDahlberg
+.REMARKS
+    https://github.com/EliasDahlberg
+.FUNCTIONALITY
+   MultiApplication finder
+#>
+
+Function Get-EDApplication {
+    [CmdletBinding()]
+    Param(
+        [Parameter(Mandatory=$true,
+        ValueFromPipeline=$true,
+        ValueFromPipelineByPropertyName=$true)]
+        [Alias("Name","Displayname")]
+        [string[]]$Application
+        )
+    BEGIN {
+        $UninstallPaths = @(
+            'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall',
+            'HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall')
+    }
+
+    PROCESS {
+        Foreach ($App in $Application) {
+            Write-Verbose "Gathering Uninsall strings for $App"
+        
+            $InstalledApp = Get-ChildItem -Path $UninstallPaths |
+                Get-ItemProperty |
+                Where-Object {$_.DisplayName -match "$App"}
+        
+            $IfAppx = Get-AppxPackage -Name "*$App*"
+            
+            if ($InstalledApp) {
+                $ApplicationStatus = @{
+                     SearchTerm = $App
+                     Application = $InstalledApp.DisplayName
+                     Publisher = $InstalledApp.publisher
+                     InstallLocation = $InstalledApp.InstallLocation
+                     Version = $($InstalledApp.VersionMajor + "." + $InstalledApp.VersionMinor)
+                     ComputerName = $env:COMPUTERNAME
+                     UserName = $env:USERNAME
+                     UninstallString = $InstalledApp.UninstallString}
+                }
+
+            if ($IfAppx) {
+                 $ApplicationStatus = @{
+                     SearchTerm = $App
+                     Application = $IfAppx.Name
+                     Publisher = $IfAppx.publisher
+                     InstallLocation = $IfAppx.InstallLocation
+                     Version = $IfAppx.Version
+                     ComputerName = $env:COMPUTERNAME
+                     UserName = $env:USERNAME}
+            }
+            $OutputStatus = New-Object -TypeName PSObject -Property $ApplicationStatus
+            Write-Output $OutputStatus
+        }
+    }
+    END {
+    }
+}
+
+#Get-EDApplication -Name "Java"
